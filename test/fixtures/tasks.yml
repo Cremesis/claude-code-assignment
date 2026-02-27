@@ -12,6 +12,13 @@ todo_task_2:
   created_at: "2026-01-01 10:30:00"
   updated_at: "2026-01-01 10:30:00"
 
+todo_task_3:
+  title: "Read a book"
+  status: "todo"
+  position: 2
+  created_at: "2026-01-01 11:00:00"
+  updated_at: "2026-01-01 11:00:00"
+
 in_progress_task:
   title: "Write tests"
   status: "in_progress"

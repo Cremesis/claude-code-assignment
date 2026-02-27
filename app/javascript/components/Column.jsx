@@ -15,7 +15,7 @@ const STATUS_LABELS = {
   done: "Done",
 };
 
-export default function Column({ status, tasks, onCardClick, onAddClick }) {
+export default function Column({ status, tasks, onCardClick }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const styles = COLUMN_STYLES[status];
 
@@ -43,15 +43,6 @@ export default function Column({ status, tasks, onCardClick, onAddClick }) {
             <TaskCard key={task.id} task={task} onClick={onCardClick} />
           ))}
         </SortableContext>
-      </div>
-
-      <div className="p-3 pt-0">
-        <button
-          onClick={() => onAddClick(status)}
-          className="w-full text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg py-2 transition-colors text-left px-3"
-        >
-          + Aggiungi task
-        </button>
       </div>
     </div>
   );

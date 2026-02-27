@@ -24,11 +24,11 @@ class BoardBrowserTest < ApplicationSystemTestCase
   end
 
   # ---------------------------------------------------------------------------
-  # 3. "+ Aggiungi task" opens the create modal
+  # 3. "Add Task" opens the create modal
   # ---------------------------------------------------------------------------
   test "add task button opens the create modal" do
     visit root_path
-    first("button", text: "+ Aggiungi task").click
+    find("button[aria-label='Add task']").click
     assert_selector "input[placeholder='Titolo del task']"
   end
 
@@ -37,7 +37,7 @@ class BoardBrowserTest < ApplicationSystemTestCase
   # ---------------------------------------------------------------------------
   test "creating a task adds it to the board" do
     visit root_path
-    first("button", text: "+ Aggiungi task").click
+    find("button[aria-label='Add task']").click
     fill_in "Titolo del task", with: "Browser test task"
     click_button "Crea Task"
     assert_text "Browser test task"

@@ -24,11 +24,13 @@ export default function KanbanBoard({ initialTasks = [] }) {
   const [activeTask, setActiveTask] = useState(null);
   const [dragOriginTasks, setDragOriginTasks] = useState(null);
   const [saving, setSaving] = useState(false);
-  const dragMetaRef = useRef({
-    lastTargetStatus: null,
-    lastNonActiveOverId: null,
-    lastInsertIndex: null,
-  });
+
+  // Tracks the final intended reorder during drag — updated on every handleDragOver.
+  // null | { targetStatus: string, orderedIds: string[] }
+  const pendingReorderRef = useRef(null);
+
+  // Tracks the last known target status for resolving drop target in handleDragEnd.
+  const lastTargetStatusRef = useRef(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -38,11 +40,8 @@ export default function KanbanBoard({ initialTasks = [] }) {
     const task = tasks.find((t) => String(t.id) === active.id);
     setActiveTask(task ?? null);
     setDragOriginTasks(tasks);
-    dragMetaRef.current = {
-      lastTargetStatus: null,
-      lastNonActiveOverId: null,
-      lastInsertIndex: null,
-    };
+    pendingReorderRef.current = null;
+    lastTargetStatusRef.current = null;
   };
 
   const handleDragOver = ({ active, over }) => {
@@ -50,7 +49,6 @@ export default function KanbanBoard({ initialTasks = [] }) {
 
     const activeId = String(active.id);
     const overId = String(over.id);
-
     const overIsColumn = STATUSES.includes(overId);
     const overContainerId = over?.data?.current?.sortable?.containerId;
     const overTask = !overIsColumn ? tasks.find((t) => String(t.id) === overId) : null;
@@ -59,37 +57,40 @@ export default function KanbanBoard({ initialTasks = [] }) {
       (STATUSES.includes(overContainerId) ? overContainerId : null) ||
       overTask?.status;
 
-    if (targetStatus && (overIsColumn || overId !== activeId)) {
-      dragMetaRef.current.lastTargetStatus = targetStatus;
-    }
-    if (!overIsColumn && overId !== activeId) {
-      dragMetaRef.current.lastNonActiveOverId = overId;
-    }
+    if (!targetStatus) return;
+    lastTargetStatusRef.current = targetStatus;
 
     const sourceTask = tasks.find((t) => String(t.id) === activeId);
-    if (!sourceTask || !targetStatus) return;
+    if (!sourceTask) return;
 
-    // Live same-column reordering animation.
-    if (targetStatus === sourceTask.status && !overIsColumn && overId !== activeId) {
-      setTasks((prev) => {
-        const columnTasks = prev
-          .filter((t) => t.status === sourceTask.status)
+    if (targetStatus === sourceTask.status) {
+      // Same-column: track intended order via ref — no state update (avoids double-transform).
+      if (!overIsColumn && overId !== activeId) {
+        const columnTasks = tasks
+          .filter((t) => t.status === targetStatus)
           .sort((a, b) => a.position - b.position);
-        const oldIndex = columnTasks.findIndex((t) => String(t.id) === activeId);
-        const newIndex = columnTasks.findIndex((t) => String(t.id) === overId);
-        if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return prev;
-        const reordered = arrayMove(columnTasks, oldIndex, newIndex).map((t, i) => ({
-          ...t,
-          position: i,
-        }));
-        return [...prev.filter((t) => t.status !== sourceTask.status), ...reordered];
-      });
+        const oldIdx = columnTasks.findIndex((t) => String(t.id) === activeId);
+        const newIdx = columnTasks.findIndex((t) => String(t.id) === overId);
+        if (oldIdx !== -1 && newIdx !== -1 && oldIdx !== newIdx) {
+          pendingReorderRef.current = {
+            targetStatus,
+            orderedIds: arrayMove(columnTasks, oldIdx, newIdx).map((t) => String(t.id)),
+          };
+        }
+      } else if (!overIsColumn && overId === activeId) {
+        // Cancel pending reorder only when the drag started in this same column.
+        // During cross-column drags, dnd-kit can report `over === active` after we
+        // visually move the card into the target column; clearing here would lose
+        // the intended insert-before-target order and cause append-on-drop.
+        const originalTask = dragOriginTasks?.find((t) => String(t.id) === activeId);
+        if (!originalTask || originalTask.status === targetStatus) {
+          pendingReorderRef.current = null;
+        }
+      }
       return;
     }
 
-    // Live cross-column animation: move the task into the target column while dragging.
-    if (targetStatus === sourceTask.status) return;
-
+    // Cross-column: move task visually into target column and record intended order.
     setTasks((prev) => {
       const sourceColumnTasks = prev
         .filter((t) => t.status === sourceTask.status && String(t.id) !== activeId)
@@ -110,13 +111,16 @@ export default function KanbanBoard({ initialTasks = [] }) {
         insertIndex = targetColumnTasks.length;
       }
 
-      dragMetaRef.current.lastInsertIndex = insertIndex;
-
       const newTargetTasks = [
         ...targetColumnTasks.slice(0, insertIndex),
         movedTask,
         ...targetColumnTasks.slice(insertIndex),
       ].map((t, i) => ({ ...t, position: i }));
+
+      pendingReorderRef.current = {
+        targetStatus,
+        orderedIds: newTargetTasks.map((t) => String(t.id)),
+      };
 
       const others = prev.filter(
         (t) => t.status !== sourceTask.status && t.status !== targetStatus
@@ -129,78 +133,73 @@ export default function KanbanBoard({ initialTasks = [] }) {
     setActiveTask(null);
     setSaving(true);
 
+    const cleanup = () => {
+      pendingReorderRef.current = null;
+      lastTargetStatusRef.current = null;
+      setDragOriginTasks(null);
+    };
+
     try {
       if (!over) {
-        // Drop outside any droppable area: restore pre-drag state.
         if (dragOriginTasks) setTasks(dragOriginTasks);
-        dragMetaRef.current = { lastTargetStatus: null, lastNonActiveOverId: null, lastInsertIndex: null };
-        setDragOriginTasks(null);
+        cleanup();
         return;
       }
 
       const activeId = String(active.id);
       const overId = String(over.id);
+      const overIsColumn = STATUSES.includes(overId);
 
       const originalTask = dragOriginTasks?.find((t) => String(t.id) === activeId);
-      if (!originalTask) {
-        dragMetaRef.current = { lastTargetStatus: null, lastNonActiveOverId: null, lastInsertIndex: null };
-        setDragOriginTasks(null);
-        return;
-      }
+      if (!originalTask) { cleanup(); return; }
 
-      const overIsColumn = STATUSES.includes(overId);
-      const fallbackOverId = dragMetaRef.current.lastNonActiveOverId;
-      const effectiveOverId =
-        overId === activeId && fallbackOverId ? fallbackOverId : overId;
-
-      // Resolve the target status from the stable origin snapshot.
-      const overOriginalTask = !overIsColumn
-        ? dragOriginTasks.find((t) => String(t.id) === effectiveOverId)
-        : null;
       const overContainerId = over?.data?.current?.sortable?.containerId;
+      const overOriginalTask = !overIsColumn
+        ? dragOriginTasks.find((t) => String(t.id) === overId)
+        : null;
       const targetStatus =
         (overIsColumn && overId) ||
         (STATUSES.includes(overContainerId) ? overContainerId : null) ||
         overOriginalTask?.status ||
-        dragMetaRef.current.lastTargetStatus;
+        pendingReorderRef.current?.targetStatus ||
+        lastTargetStatusRef.current;
 
-      if (!targetStatus) {
-        dragMetaRef.current = { lastTargetStatus: null, lastNonActiveOverId: null, lastInsertIndex: null };
-        setDragOriginTasks(null);
-        return;
-      }
+      if (!targetStatus) { cleanup(); return; }
 
       const isCrossColumn = targetStatus !== originalTask.status;
 
       // ── Cross-column ────────────────────────────────────────────────────────
       if (isCrossColumn) {
-        // Reject backward moves immediately on the client — no API call needed.
         const oldStatusIndex = STATUSES.indexOf(originalTask.status);
         const newStatusIndex = STATUSES.indexOf(targetStatus);
         if (newStatusIndex < oldStatusIndex) {
           setTasks(dragOriginTasks);
-          setDragOriginTasks(null);
+          cleanup();
           alert("Status can only advance forward.");
           return;
         }
 
-        // Recompute final positions from the origin snapshot to avoid stale tasksRef.
+        // Build final column order from pendingReorderRef (tracks exact drop position).
         const originTargetColumn = dragOriginTasks
           .filter((t) => t.status === targetStatus)
           .sort((a, b) => a.position - b.position);
 
-        const storedInsertIndex = dragMetaRef.current.lastInsertIndex;
-        const insertIndex =
-          storedInsertIndex != null ? storedInsertIndex : originTargetColumn.length;
+        let finalColumnTasks;
+        if (pendingReorderRef.current?.targetStatus === targetStatus) {
+          const taskById = new Map(dragOriginTasks.map((t) => [String(t.id), t]));
+          taskById.set(activeId, { ...originalTask, status: targetStatus });
+          finalColumnTasks = pendingReorderRef.current.orderedIds
+            .map((id) => taskById.get(id))
+            .filter(Boolean)
+            .map((t, i) => ({ ...t, position: i }));
+        } else {
+          // Dropped directly on column header / no hover recorded: append at end.
+          finalColumnTasks = [
+            ...originTargetColumn,
+            { ...originalTask, status: targetStatus },
+          ].map((t, i) => ({ ...t, position: i }));
+        }
 
-        const movedTask = { ...originalTask, status: targetStatus };
-        const finalColumnTasks = [
-          ...originTargetColumn.slice(0, insertIndex),
-          movedTask,
-          ...originTargetColumn.slice(insertIndex),
-        ].map((t, i) => ({ ...t, position: i }));
-
-        // Apply optimistic update with the correct final positions.
         setTasks((prev) => [
           ...prev.filter((t) => t.status !== targetStatus && String(t.id) !== activeId),
           ...finalColumnTasks,
@@ -215,66 +214,49 @@ export default function KanbanBoard({ initialTasks = [] }) {
           setTasks(dragOriginTasks);
           const data = await statusResponse.json().catch(() => ({}));
           alert(data.errors?.join(", ") ?? "Unable to update status.");
-          setDragOriginTasks(null);
+          cleanup();
           return;
         }
 
-        // Persist exact positions in the target column.
         const reorderBody = finalColumnTasks.map((t) => ({ id: t.id, position: t.position }));
         await api.post("/tasks/reorder.json", { tasks: reorderBody });
 
-        dragMetaRef.current = { lastTargetStatus: null, lastNonActiveOverId: null, lastInsertIndex: null };
-        setDragOriginTasks(null);
+        cleanup();
         return;
       }
 
       // ── Same-column reorder ─────────────────────────────────────────────────
-      // When live reordering has shifted card positions, the drop may land on the
-      // column droppable (overIsColumn=true) rather than a task. Fall back to the
-      // last recorded non-active hover target so the API call is never skipped.
-      const sameColumnTargetId =
-        !overIsColumn
-          ? effectiveOverId
-          : fallbackOverId ?? null;
-      const sameColumnOverTask = sameColumnTargetId
-        ? dragOriginTasks.find((t) => String(t.id) === sameColumnTargetId)
-        : null;
-
-      if (sameColumnOverTask) {
-        const columnTasks = dragOriginTasks
-          .filter((t) => t.status === originalTask.status)
-          .sort((a, b) => a.position - b.position);
-
-        const oldIndex = columnTasks.findIndex((t) => String(t.id) === activeId);
-        const newIndex = columnTasks.findIndex((t) => String(t.id) === sameColumnTargetId);
-
-        if (oldIndex !== newIndex) {
-          const reordered = arrayMove(columnTasks, oldIndex, newIndex);
-          const reorderedWithPositions = reordered.map((t, i) => ({ ...t, position: i }));
-
-          setTasks((prev) => {
-            const others = prev.filter((t) => t.status !== originalTask.status);
-            return [...others, ...reorderedWithPositions];
-          });
-
-          const body = reorderedWithPositions.map((t) => ({ id: t.id, position: t.position }));
-          const response = await api.post("/tasks/reorder.json", { tasks: body });
-
-          if (!response.ok) {
-            setTasks(dragOriginTasks);
-          }
-        }
+      // Released on the active card itself → returned to original slot, nothing to do.
+      if (!overIsColumn && overId === activeId) {
+        cleanup();
+        return;
       }
+      if (pendingReorderRef.current?.targetStatus === originalTask.status) {
+        const taskById = new Map(dragOriginTasks.map((t) => [String(t.id), t]));
+        const reordered = pendingReorderRef.current.orderedIds
+          .map((id) => taskById.get(id))
+          .filter(Boolean)
+          .map((t, i) => ({ ...t, position: i }));
 
-      dragMetaRef.current = { lastTargetStatus: null, lastNonActiveOverId: null, lastInsertIndex: null };
-      setDragOriginTasks(null);
+        setTasks((prev) => [
+          ...prev.filter((t) => t.status !== originalTask.status),
+          ...reordered,
+        ]);
+
+        const body = reordered.map((t) => ({ id: t.id, position: t.position }));
+        const response = await api.post("/tasks/reorder.json", { tasks: body });
+        if (!response.ok) setTasks(dragOriginTasks);
+      }
+      // No pendingReorderRef → card returned to original position, no API call needed.
+
+      cleanup();
     } finally {
       setSaving(false);
     }
   };
 
-  const openCreateModal = (defaultStatus) => {
-    setModal({ mode: "create", defaultStatus });
+  const openCreateModal = () => {
+    setModal({ mode: "create", defaultStatus: "todo" });
   };
 
   const openEditModal = (task) => {
@@ -299,13 +281,22 @@ export default function KanbanBoard({ initialTasks = [] }) {
     <div className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 p-8" data-saving={saving}>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Kanban Board</h1>
-        <button
-          onClick={() => setSearchOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 shadow-sm transition-colors"
-          aria-label="Search tasks"
-        >
-          🔍 Search
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={openCreateModal}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm transition-colors"
+            aria-label="Add task"
+          >
+            Add Task
+          </button>
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 shadow-sm transition-colors"
+            aria-label="Search tasks"
+          >
+            🔍 Search
+          </button>
+        </div>
       </div>
 
       <DndContext
@@ -325,7 +316,6 @@ export default function KanbanBoard({ initialTasks = [] }) {
                 .filter((t) => t.status === status)
                 .sort((a, b) => a.position - b.position)}
               onCardClick={openEditModal}
-              onAddClick={openCreateModal}
             />
           ))}
         </div>

@@ -114,6 +114,57 @@ class DragAndDropTest < ApplicationSystemTestCase
       "Expected dragged card to land before the target card"
   end
 
+  # ---------------------------------------------------------------------------
+  # Cancel drag by returning to original position
+  # ---------------------------------------------------------------------------
+
+  test "dragging first card over second then back to first position leaves order unchanged" do
+    visit root_path
+
+    first_card  = card_for(tasks(:todo_task))
+    second_card = card_for(tasks(:todo_task_2))
+    third_card  = card_for(tasks(:todo_task_3))
+
+    # Record initial vertical order
+    initial_y1 = first_card.native.location.y
+    initial_y2 = second_card.native.location.y
+    initial_y3 = third_card.native.location.y
+
+    assert initial_y1 < initial_y2, "todo_task must start above todo_task_2"
+    assert initial_y2 < initial_y3, "todo_task_2 must start above todo_task_3"
+
+    # Pre-compute delta from pre-drag viewport coordinates (no CSS transforms yet).
+    # Using move_by avoids the problem where dnd-kit's CSS transforms shift the DOM
+    # elements' reported locations during the drag, causing move_to(element) to land
+    # at the wrong position.
+    delta = second_card.native.location.y - first_card.native.location.y
+
+    # Drag first card over the second, then slide back and release.
+    page.driver.browser.action
+      .click_and_hold(first_card.native)   # cursor at first_card center (no transforms yet)
+      .move_by(0, 10)                       # >8 px to activate PointerSensor
+      .move_by(0, delta - 10)              # reach second_card center
+      .move_by(0, -(delta + 20))           # return to 20 px above first_card original center
+      .release
+      .perform
+
+    sleep 0.6  # let React settle + any API call complete
+
+    # Visual order must be unchanged
+    assert card_for(tasks(:todo_task)).native.location.y <
+           card_for(tasks(:todo_task_2)).native.location.y,
+      "todo_task must still be above todo_task_2"
+
+    assert card_for(tasks(:todo_task_2)).native.location.y <
+           card_for(tasks(:todo_task_3)).native.location.y,
+      "todo_task_2 must still be above todo_task_3"
+
+    # Database positions must be unchanged
+    assert_equal 0, tasks(:todo_task).reload.position,   "todo_task position must remain 0"
+    assert_equal 1, tasks(:todo_task_2).reload.position, "todo_task_2 position must remain 1"
+    assert_equal 2, tasks(:todo_task_3).reload.position, "todo_task_3 position must remain 2"
+  end
+
   test "cross-column move persists after page reload with correct position" do
     visit root_path
 
