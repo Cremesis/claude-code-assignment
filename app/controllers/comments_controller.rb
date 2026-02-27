@@ -6,7 +6,7 @@ class CommentsController < ApplicationController
     respond_to do |format|
       format.html do
         if @comment.save
-          redirect_to @task, notice: "Comment added."
+          redirect_to @task, notice: t(".success")
         else
           @task.reload
           render "tasks/show", status: :unprocessable_entity
@@ -26,7 +26,7 @@ class CommentsController < ApplicationController
     @comment = @task.comments.find(params[:id])
     @comment.destroy
     respond_to do |format|
-      format.html { redirect_to @task, notice: "Comment deleted." }
+      format.html { redirect_to @task, notice: t(".success") }
       format.json { head :no_content }
     end
   end

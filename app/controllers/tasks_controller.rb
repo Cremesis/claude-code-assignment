@@ -36,7 +36,7 @@ class TasksController < ApplicationController
     respond_to do |format|
       format.html do
         if @task.save
-          redirect_to @task, notice: "Task created."
+          redirect_to @task, notice: t(".success")
         else
           render :new, status: :unprocessable_entity
         end
@@ -58,7 +58,7 @@ class TasksController < ApplicationController
     respond_to do |format|
       format.html do
         if @task.update(task_params)
-          redirect_to @task, notice: "Task updated."
+          redirect_to @task, notice: t(".success")
         else
           render :edit, status: :unprocessable_entity
         end
@@ -76,7 +76,7 @@ class TasksController < ApplicationController
   def destroy
     @task.destroy
     respond_to do |format|
-      format.html { redirect_to tasks_path, notice: "Task deleted." }
+      format.html { redirect_to tasks_path, notice: t(".success") }
       format.json { head :no_content }
     end
   end

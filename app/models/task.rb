@@ -30,6 +30,6 @@ class Task < ApplicationRecord
   def status_can_only_advance
     old_index = STATUSES.index(status_was)
     new_index = STATUSES.index(status)
-    errors.add(:status, "can only advance forward") if new_index < old_index
+    errors.add(:status, :can_only_advance_forward) if new_index < old_index
   end
 end

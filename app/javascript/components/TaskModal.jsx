@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { api } from "./api";
+import { useT } from "./i18n";
 
 const STATUSES = ["todo", "in_progress", "done"];
-const STATUS_LABELS = { todo: "Todo", in_progress: "In Progress", done: "Done" };
 
 export default function TaskModal({ modal, onClose, onSave, onDelete }) {
+  const t = useT();
   const { mode, task: initialTask, defaultStatus } = modal;
 
   const [title, setTitle] = useState(initialTask?.title ?? "");
@@ -16,12 +17,17 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
   const [saving, setSaving] = useState(false);
 
   const overlayRef = useRef(null);
+  const dateLocale = t("locale", { defaultValue: "en-US" });
 
   const formatDateTime = (value) => {
-    if (!value) return "—";
+    if (!value) return t("task_modal.invalid_date");
+
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "—";
-    return new Intl.DateTimeFormat("it-IT", {
+    if (Number.isNaN(date.getTime())) {
+      return t("task_modal.invalid_date");
+    }
+
+    return new Intl.DateTimeFormat(dateLocale, {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -30,9 +36,11 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
     }).format(date);
   };
 
-  // Close on ESC
   useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    const handler = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
@@ -41,36 +49,50 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
     if (e.target === overlayRef.current) onClose();
   };
 
-  const availableStatuses = STATUSES.filter((s) => {
-    if (mode === "create") return s === "todo";
+  const availableStatuses = STATUSES.filter((nextStatus) => {
+    if (mode === "create") return nextStatus === "todo";
+
     const currentIdx = STATUSES.indexOf(initialTask?.status ?? "todo");
-    return STATUSES.indexOf(s) >= currentIdx;
+    return STATUSES.indexOf(nextStatus) >= currentIdx;
   });
 
   const handleSave = async () => {
     setSaving(true);
     setErrors([]);
+
     try {
       let response;
       if (mode === "create") {
-        response = await api.post("/tasks.json", { task: { title, description, status: "todo" } });
+        response = await api.post("/tasks.json", {
+          task: { title, description, status: "todo" },
+        });
       } else {
-        response = await api.patch(`/tasks/${initialTask.id}.json`, { task: { title, description, status } });
+        response = await api.patch(`/tasks/${initialTask.id}.json`, {
+          task: { title, description, status },
+        });
       }
+
       const data = await response.json();
       if (!response.ok) {
-        setErrors(data.errors ?? ["Something went wrong"]);
-      } else {
-        onSave(data, mode);
-        onClose();
+        setErrors(data.errors ?? [t("task_modal.generic_error")]);
+        return;
       }
+
+      onSave(data, mode);
+      onClose();
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Eliminare "${initialTask.title}"?`)) return;
+    const confirmed = confirm(
+      t("task_modal.confirm_delete", {
+        title: initialTask.title,
+      })
+    );
+    if (!confirmed) return;
+
     await api.delete(`/tasks/${initialTask.id}.json`);
     onDelete(initialTask.id);
     onClose();
@@ -78,9 +100,11 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
+
     const response = await api.post(`/tasks/${initialTask.id}/comments.json`, {
       comment: { body: newComment },
     });
+
     if (response.ok) {
       const comment = await response.json();
       setComments((prev) => [...prev, comment]);
@@ -90,10 +114,8 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
 
   const handleDeleteComment = async (commentId) => {
     await api.delete(`/tasks/${initialTask.id}/comments/${commentId}.json`);
-    setComments((prev) => prev.filter((c) => c.id !== commentId));
+    setComments((prev) => prev.filter((comment) => comment.id !== commentId));
   };
-
-  const isReadonly = false; // always allow editing
 
   return (
     <div
@@ -104,11 +126,14 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-800">
-            {mode === "create" ? "Nuovo Task" : "Task"}
+            {mode === "create"
+              ? t("task_modal.new_task_title")
+              : t("task_modal.task_title")}
           </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+            aria-label={t("task_modal.close_aria")}
           >
             ×
           </button>
@@ -117,58 +142,74 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
         <div className="px-6 py-4 space-y-4">
           {errors.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-              {errors.map((e, i) => <div key={i}>{e}</div>)}
+              {errors.map((error, index) => (
+                <div key={index}>{error}</div>
+              ))}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Titolo *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t("task_modal.title_label")}
+            </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Titolo del task"
+              placeholder={t("task_modal.title_placeholder")}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descrizione</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t("task_modal.description_label")}
+            </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              placeholder="Descrizione opzionale"
+              placeholder={t("task_modal.description_placeholder")}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
           </div>
 
           {mode !== "create" && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("task_modal.status_label")}
+              </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {availableStatuses.map((s) => (
-                  <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                {availableStatuses.map((nextStatus) => (
+                  <option key={nextStatus} value={nextStatus}>
+                    {t(`statuses.${nextStatus}`)}
+                  </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-400 mt-1">Lo status può solo avanzare</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {t("task_modal.status_forward_hint")}
+              </p>
             </div>
           )}
 
           {mode !== "create" && (
             <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-gray-600">Data creazione</span>
+                <span className="text-gray-600">
+                  {t("task_modal.created_at_label")}
+                </span>
                 <span className="font-medium text-gray-800">
                   {formatDateTime(initialTask?.created_at)}
                 </span>
               </div>
               <div className="mt-1 flex items-center justify-between gap-2">
-                <span className="text-gray-600">Ultimo aggiornamento</span>
+                <span className="text-gray-600">
+                  {t("task_modal.updated_at_label")}
+                </span>
                 <span className="font-medium text-gray-800">
                   {formatDateTime(initialTask?.updated_at)}
                 </span>
@@ -182,30 +223,38 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
               disabled={saving}
               className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors"
             >
-              {saving ? "Salvataggio…" : mode === "create" ? "Crea Task" : "Salva"}
+              {saving
+                ? t("task_modal.saving")
+                : mode === "create"
+                  ? t("task_modal.create")
+                  : t("task_modal.save")}
             </button>
             <button
               onClick={onClose}
               className="px-4 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Annulla
+              {t("task_modal.cancel")}
             </button>
           </div>
         </div>
 
-        {/* Comments section — only for existing tasks */}
         {mode !== "create" && (
           <div className="border-t border-gray-100 px-6 py-4 space-y-3">
             <h3 className="text-sm font-semibold text-gray-700">
-              Commenti ({comments.length})
+              {t("task_modal.comments_heading", {
+                count: comments.length,
+              })}
             </h3>
 
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {comments.map((c) => (
-                <div key={c.id} className="flex items-start justify-between gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                  <p className="text-sm text-gray-700 flex-1">{c.body}</p>
+              {comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="flex items-start justify-between gap-2 bg-gray-50 rounded-lg px-3 py-2"
+                >
+                  <p className="text-sm text-gray-700 flex-1">{comment.body}</p>
                   <button
-                    onClick={() => handleDeleteComment(c.id)}
+                    onClick={() => handleDeleteComment(comment.id)}
                     className="text-gray-300 hover:text-red-500 text-xs shrink-0"
                   >
                     ✕
@@ -213,7 +262,9 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
                 </div>
               ))}
               {comments.length === 0 && (
-                <p className="text-sm text-gray-400 italic">Nessun commento.</p>
+                <p className="text-sm text-gray-400 italic">
+                  {t("task_modal.no_comments")}
+                </p>
               )}
             </div>
 
@@ -223,27 +274,26 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
-                placeholder="Aggiungi commento…"
+                placeholder={t("task_modal.add_comment_placeholder")}
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={handleAddComment}
                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm px-3 py-2 rounded-lg transition-colors"
               >
-                Invia
+                {t("task_modal.send_comment")}
               </button>
             </div>
           </div>
         )}
 
-        {/* Delete button */}
         {mode !== "create" && (
           <div className="border-t border-gray-100 px-6 py-4">
             <button
               onClick={handleDelete}
               className="text-sm text-red-500 hover:text-red-700 hover:underline"
             >
-              Elimina task
+              {t("task_modal.delete_task")}
             </button>
           </div>
         )}

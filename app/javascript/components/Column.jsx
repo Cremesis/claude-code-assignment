@@ -2,6 +2,7 @@ import React from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import TaskCard from "./TaskCard";
+import { useT } from "./i18n";
 
 const COLUMN_STYLES = {
   todo: { header: "bg-gray-200 text-gray-700", border: "border-gray-200" },
@@ -9,13 +10,8 @@ const COLUMN_STYLES = {
   done: { header: "bg-green-200 text-green-800", border: "border-green-200" },
 };
 
-const STATUS_LABELS = {
-  todo: "Todo",
-  in_progress: "In Progress",
-  done: "Done",
-};
-
 export default function Column({ status, tasks, onCardClick }) {
+  const t = useT();
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const styles = COLUMN_STYLES[status];
 
@@ -25,7 +21,7 @@ export default function Column({ status, tasks, onCardClick }) {
     >
       <div className={`flex items-center justify-between px-4 py-3 rounded-t-xl ${styles.header}`}>
         <span className="font-semibold text-sm">
-          {STATUS_LABELS[status]}
+          {t(`statuses.${status}`)}
         </span>
         <span className="text-xs font-medium bg-white bg-opacity-60 px-2 py-0.5 rounded-full">
           {tasks.length}
@@ -38,7 +34,7 @@ export default function Column({ status, tasks, onCardClick }) {
       >
         <SortableContext
           id={status}
-          items={tasks.map(t => String(t.id))}
+          items={tasks.map((t) => String(t.id))}
           strategy={verticalListSortingStrategy}
         >
           {tasks.map((task) => (

@@ -1,31 +1,73 @@
-# Files in the config/locales directory are used for internationalization and
-# are automatically loaded by Rails. If you want to use locales other than
-# English, add the necessary files in this directory.
-#
-# To use the locales, use `I18n.t`:
-#
-#     I18n.t "hello"
-#
-# In views, this is aliased to just `t`:
-#
-#     <%= t("hello") %>
-#
-# To use a different locale, set it with `I18n.locale`:
-#
-#     I18n.locale = :es
-#
-# This would use the information in config/locales/es.yml.
-#
-# To learn more about the API, please read the Rails Internationalization guide
-# at https://guides.rubyonrails.org/i18n.html.
-#
-# Be aware that YAML interprets the following case-insensitive strings as
-# booleans: `true`, `false`, `on`, `off`, `yes`, `no`. Therefore, these strings
-# must be quoted to be interpreted as strings. For example:
-#
-#     en:
-#       "yes": yup
-#       enabled: "ON"
-
 en:
-  hello: "Hello world"
+  app:
+    title: "ClaudeCodeAssignment"
+  tasks:
+    create:
+      success: "Task created."
+    update:
+      success: "Task updated."
+    destroy:
+      success: "Task deleted."
+  comments:
+    create:
+      success: "Comment added."
+    destroy:
+      success: "Comment deleted."
+  activerecord:
+    errors:
+      models:
+        task:
+          attributes:
+            status:
+              can_only_advance_forward: "can only advance forward"
+  frontend:
+    locale: "it-IT"
+    statuses:
+      todo: "Todo"
+      in_progress: "In Progress"
+      done: "Done"
+    kanban:
+      board_title: "Kanban Board"
+      add_task: "Add Task"
+      search: "Search"
+      add_task_aria: "Add task"
+      search_tasks_aria: "Search tasks"
+      status_forward_only: "Status can only advance forward."
+      status_update_failed: "Unable to update status."
+    task_modal:
+      close_aria: "Close"
+      new_task_title: "Nuovo Task"
+      task_title: "Task"
+      title_label: "Titolo *"
+      title_placeholder: "Titolo del task"
+      description_label: "Descrizione"
+      description_placeholder: "Descrizione opzionale"
+      status_label: "Status"
+      status_forward_hint: "Lo status può solo avanzare"
+      created_at_label: "Data creazione"
+      updated_at_label: "Ultimo aggiornamento"
+      saving: "Salvataggio..."
+      create: "Crea Task"
+      save: "Salva"
+      cancel: "Annulla"
+      comments_heading: "Commenti (%{count})"
+      no_comments: "Nessun commento."
+      add_comment_placeholder: "Aggiungi commento…"
+      send_comment: "Invia"
+      delete_task: "Elimina task"
+      confirm_delete: "Eliminare \"%{title}\"?"
+      generic_error: "Something went wrong"
+      invalid_date: "—"
+    task_card:
+      open: "Apri"
+      open_details_tooltip: "Clicca per aprire i dettagli del task"
+    search_modal:
+      title: "Search tasks"
+      close_aria: "Close"
+      query_placeholder: "Search by title…"
+      empty_state: "No tasks match your search"
+      chips:
+        all: "All"
+        todo: "Todo"
+        in_progress: "In Progress"
+        done: "Done"
