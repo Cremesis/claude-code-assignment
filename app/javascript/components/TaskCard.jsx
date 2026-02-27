@@ -42,9 +42,11 @@ export default function TaskCard({ task, onClick }) {
           </span>
         </div>
         <div className="flex items-center justify-end gap-2 text-xs text-gray-400">
-          <span>
-            💬 {commentCount}
-          </span>
+          {commentCount > 0 && (
+            <span>
+              💬 {commentCount}
+            </span>
+          )}
           <span>{createdAt}</span>
         </div>
       </div>
