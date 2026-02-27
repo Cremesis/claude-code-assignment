@@ -1,0 +1,73 @@
+it:
+  app:
+    title: "ClaudeCodeAssignment"
+  tasks:
+    create:
+      success: "Task creato."
+    update:
+      success: "Task aggiornato."
+    destroy:
+      success: "Task eliminato."
+  comments:
+    create:
+      success: "Commento aggiunto."
+    destroy:
+      success: "Commento eliminato."
+  activerecord:
+    errors:
+      models:
+        task:
+          attributes:
+            status:
+              can_only_advance_forward: "puo solo avanzare"
+  frontend:
+    locale: "it-IT"
+    statuses:
+      todo: "Da fare"
+      in_progress: "In corso"
+      done: "Completato"
+    kanban:
+      board_title: "Bacheca Kanban"
+      add_task: "Aggiungi task"
+      search: "Cerca"
+      add_task_aria: "Aggiungi task"
+      search_tasks_aria: "Cerca task"
+      status_forward_only: "Lo stato puo solo avanzare."
+      status_update_failed: "Impossibile aggiornare lo stato."
+    task_modal:
+      close_aria: "Chiudi"
+      new_task_title: "Nuovo Task"
+      task_title: "Task"
+      title_label: "Titolo *"
+      title_placeholder: "Titolo del task"
+      description_label: "Descrizione"
+      description_placeholder: "Descrizione opzionale"
+      status_label: "Stato"
+      status_forward_hint: "Lo stato puo solo avanzare"
+      created_at_label: "Data creazione"
+      updated_at_label: "Ultimo aggiornamento"
+      saving: "Salvataggio..."
+      create: "Crea Task"
+      save: "Salva"
+      cancel: "Annulla"
+      comments_heading: "Commenti (%{count})"
+      no_comments: "Nessun commento."
+      add_comment_placeholder: "Aggiungi commento..."
+      send_comment: "Invia"
+      delete_task: "Elimina task"
+      confirm_delete: "Eliminare \"%{title}\"?"
+      generic_error: "Qualcosa e andato storto"
+      invalid_date: "-"
+    task_card:
+      open: "Apri"
+      open_details_tooltip: "Clicca per aprire i dettagli del task"
+    search_modal:
+      title: "Cerca task"
+      close_aria: "Chiudi"
+      query_placeholder: "Cerca per titolo..."
+      empty_state: "Nessun task corrisponde alla ricerca"
+      chips:
+        all: "Tutti"
+        todo: "Da fare"
+        in_progress: "In corso"
+        done: "Completato"

@@ -73,7 +73,7 @@ class DragAndDropTest < ApplicationSystemTestCase
 
     # An alert must appear
     alert_text = accept_alert
-    assert_includes alert_text, "forward", "Expected alert about forward-only status"
+    assert_equal ui_t("kanban.status_forward_only"), alert_text
 
     # Card must still be in the in_progress column
     within(find(".border-blue-200")) do
@@ -87,7 +87,7 @@ class DragAndDropTest < ApplicationSystemTestCase
     drag_to(card_for(tasks(:done_task)), card_for(tasks(:in_progress_task)))
 
     alert_text = accept_alert
-    assert_includes alert_text, "forward", "Expected alert about forward-only status"
+    assert_equal ui_t("kanban.status_forward_only"), alert_text
 
     within(find(".border-green-200")) do
       assert_text tasks(:done_task).title

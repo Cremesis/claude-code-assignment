@@ -12,4 +12,10 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
     driver_options.add_argument("--disable-dev-shm-usage")
     driver_options.add_argument("--disable-gpu")
   end
+
+  private
+
+  def ui_t(key, **options)
+    I18n.t("frontend.#{key}", **options)
+  end
 end

@@ -8,9 +8,9 @@ class BoardBrowserTest < ApplicationSystemTestCase
   # ---------------------------------------------------------------------------
   test "board shows three column headers" do
     visit root_path
-    assert_text "Todo"
-    assert_text "In Progress"
-    assert_text "Done"
+    assert_text ui_t("statuses.todo")
+    assert_text ui_t("statuses.in_progress")
+    assert_text ui_t("statuses.done")
   end
 
   # ---------------------------------------------------------------------------
@@ -28,8 +28,8 @@ class BoardBrowserTest < ApplicationSystemTestCase
   # ---------------------------------------------------------------------------
   test "add task button opens the create modal" do
     visit root_path
-    find("button[aria-label='Add task']").click
-    assert_selector "input[placeholder='Titolo del task']"
+    find(%(button[aria-label="#{ui_t("kanban.add_task_aria")}"])).click
+    assert_selector %(input[placeholder="#{ui_t("task_modal.title_placeholder")}"])
   end
 
   # ---------------------------------------------------------------------------
@@ -37,9 +37,9 @@ class BoardBrowserTest < ApplicationSystemTestCase
   # ---------------------------------------------------------------------------
   test "creating a task adds it to the board" do
     visit root_path
-    find("button[aria-label='Add task']").click
-    fill_in "Titolo del task", with: "Browser test task"
-    click_button "Crea Task"
+    find(%(button[aria-label="#{ui_t("kanban.add_task_aria")}"])).click
+    fill_in ui_t("task_modal.title_placeholder"), with: "Browser test task"
+    click_button ui_t("task_modal.create")
     assert_text "Browser test task"
   end
 
@@ -50,8 +50,8 @@ class BoardBrowserTest < ApplicationSystemTestCase
     visit root_path
     find("p", text: tasks(:todo_task).title).click
     assert_selector "input[value='#{tasks(:todo_task).title}']"
-    assert_text "Data creazione"
-    assert_text "Ultimo aggiornamento"
+    assert_text ui_t("task_modal.created_at_label")
+    assert_text ui_t("task_modal.updated_at_label")
   end
 
   # ---------------------------------------------------------------------------
@@ -70,8 +70,8 @@ class BoardBrowserTest < ApplicationSystemTestCase
   test "adding a comment displays it in the modal" do
     visit root_path
     find("p", text: tasks(:todo_task).title).click
-    fill_in "Aggiungi commento…", with: "Un nuovo commento"
-    click_button "Invia"
+    fill_in ui_t("task_modal.add_comment_placeholder"), with: "Un nuovo commento"
+    click_button ui_t("task_modal.send_comment")
     assert_text "Un nuovo commento"
   end
 
@@ -82,7 +82,7 @@ class BoardBrowserTest < ApplicationSystemTestCase
     visit root_path
     find("p", text: tasks(:todo_task).title).click
     assert_selector "input[value='#{tasks(:todo_task).title}']"
-    click_button "Annulla"
+    click_button ui_t("task_modal.cancel")
     assert_no_selector "input[value='#{tasks(:todo_task).title}']"
   end
 
@@ -104,7 +104,7 @@ class BoardBrowserTest < ApplicationSystemTestCase
     visit root_path
     find("p", text: tasks(:done_task).title).click
     accept_confirm do
-      click_button "Elimina task"
+      click_button ui_t("task_modal.delete_task")
     end
     assert_no_text tasks(:done_task).title
   end

@@ -8,7 +8,7 @@ class TaskSearchTest < ApplicationSystemTestCase
   # column header buttons that share the same text as the status chips.
   def open_search_modal
     visit root_path
-    find("button[aria-label='Search tasks']").click
+    find(%(button[aria-label="#{ui_t("kanban.search_tasks_aria")}"])).click
     # Return the white panel div so callers can scope queries to it.
     find(".fixed.inset-0 > div")
   end
@@ -36,8 +36,8 @@ class TaskSearchTest < ApplicationSystemTestCase
   # ---------------------------------------------------------------------------
   def test_search_button_is_visible_on_the_board
     visit root_path
-    assert_selector "button[aria-label='Search tasks']"
-    assert_text "Search"
+    assert_selector %(button[aria-label="#{ui_t("kanban.search_tasks_aria")}"])
+    assert_text ui_t("kanban.search")
   end
 
   # ---------------------------------------------------------------------------
@@ -45,8 +45,8 @@ class TaskSearchTest < ApplicationSystemTestCase
   # ---------------------------------------------------------------------------
   def test_clicking_search_button_opens_search_modal
     open_search_modal
-    assert_selector "h2", text: "Search tasks"
-    assert_selector "input[placeholder='Search by title…']"
+    assert_selector "h2", text: ui_t("search_modal.title")
+    assert_selector %(input[placeholder="#{ui_t("search_modal.query_placeholder")}"])
   end
 
   # ---------------------------------------------------------------------------
@@ -61,7 +61,7 @@ class TaskSearchTest < ApplicationSystemTestCase
     assert_result_text tasks(:done_task).title, panel
 
     # Filter by a unique substring of the todo task title
-    within(panel) { fill_in "Search by title…", with: "groceries" }
+    within(panel) { fill_in ui_t("search_modal.query_placeholder"), with: "groceries" }
 
     assert_result_text tasks(:todo_task).title, panel
     assert_no_result_text tasks(:in_progress_task).title, panel
@@ -74,7 +74,7 @@ class TaskSearchTest < ApplicationSystemTestCase
   def test_status_chip_filters_by_in_progress
     panel = open_search_modal
 
-    click_status_chip("In Progress", panel)
+    click_status_chip(ui_t("search_modal.chips.in_progress"), panel)
 
     assert_result_text tasks(:in_progress_task).title, panel
     assert_no_result_text tasks(:todo_task).title, panel
@@ -84,7 +84,7 @@ class TaskSearchTest < ApplicationSystemTestCase
   def test_status_chip_filters_by_todo
     panel = open_search_modal
 
-    click_status_chip("Todo", panel)
+    click_status_chip(ui_t("search_modal.chips.todo"), panel)
 
     assert_result_text tasks(:todo_task).title, panel
     assert_result_text tasks(:todo_task_2).title, panel
@@ -95,7 +95,7 @@ class TaskSearchTest < ApplicationSystemTestCase
   def test_status_chip_filters_by_done
     panel = open_search_modal
 
-    click_status_chip("Done", panel)
+    click_status_chip(ui_t("search_modal.chips.done"), panel)
 
     assert_result_text tasks(:done_task).title, panel
     assert_no_result_text tasks(:todo_task).title, panel
@@ -110,8 +110,8 @@ class TaskSearchTest < ApplicationSystemTestCase
 
     # Filter by "In Progress" status chip. exact_text: true avoids ambiguity
     # with result-row buttons whose content includes the status badge text.
-    click_status_chip("In Progress", panel)
-    within(panel) { fill_in "Search by title…", with: "tests" }
+    click_status_chip(ui_t("search_modal.chips.in_progress"), panel)
+    within(panel) { fill_in ui_t("search_modal.query_placeholder"), with: "tests" }
 
     assert_result_text tasks(:in_progress_task).title, panel
     assert_no_result_text tasks(:todo_task).title, panel
@@ -121,10 +121,10 @@ class TaskSearchTest < ApplicationSystemTestCase
   def test_text_and_status_filters_combine_to_produce_no_results
     panel = open_search_modal
 
-    click_status_chip("In Progress", panel)
-    within(panel) { fill_in "Search by title…", with: "groceries" }
+    click_status_chip(ui_t("search_modal.chips.in_progress"), panel)
+    within(panel) { fill_in ui_t("search_modal.query_placeholder"), with: "groceries" }
 
-    assert_result_text "No tasks match your search", panel
+    assert_result_text ui_t("search_modal.empty_state"), panel
   end
 
   # ---------------------------------------------------------------------------
@@ -136,8 +136,8 @@ class TaskSearchTest < ApplicationSystemTestCase
     within(panel) { find("button", text: tasks(:todo_task).title).click }
 
     # SearchModal should be gone
-    assert_no_selector "h2", text: "Search tasks"
-    assert_no_selector "input[placeholder='Search by title…']"
+    assert_no_selector "h2", text: ui_t("search_modal.title")
+    assert_no_selector %(input[placeholder="#{ui_t("search_modal.query_placeholder")}"])
 
     # TaskModal (edit mode) should be open with the task's title in an input
     assert_selector "input[value='#{tasks(:todo_task).title}']"
@@ -148,11 +148,11 @@ class TaskSearchTest < ApplicationSystemTestCase
   # ---------------------------------------------------------------------------
   def test_esc_key_closes_search_modal
     open_search_modal
-    assert_selector "h2", text: "Search tasks"
+    assert_selector "h2", text: ui_t("search_modal.title")
 
     find("body").send_keys :escape
 
-    assert_no_selector "h2", text: "Search tasks"
+    assert_no_selector "h2", text: ui_t("search_modal.title")
   end
 
   # ---------------------------------------------------------------------------
@@ -160,13 +160,13 @@ class TaskSearchTest < ApplicationSystemTestCase
   # ---------------------------------------------------------------------------
   def test_clicking_overlay_closes_search_modal
     open_search_modal
-    assert_selector "h2", text: "Search tasks"
+    assert_selector "h2", text: ui_t("search_modal.title")
 
     # Click in the top-left corner of the full-screen overlay, which is well
     # outside the centred white panel (max-w-lg).
     find(".fixed.inset-0", match: :first).click(x: 5, y: 5)
 
-    assert_no_selector "h2", text: "Search tasks"
+    assert_no_selector "h2", text: ui_t("search_modal.title")
   end
 
   # ---------------------------------------------------------------------------
@@ -175,8 +175,8 @@ class TaskSearchTest < ApplicationSystemTestCase
   def test_empty_state_message_when_no_results_match
     panel = open_search_modal
 
-    within(panel) { fill_in "Search by title…", with: "xyzzy_no_such_task_exists" }
+    within(panel) { fill_in ui_t("search_modal.query_placeholder"), with: "xyzzy_no_such_task_exists" }
 
-    assert_result_text "No tasks match your search", panel
+    assert_result_text ui_t("search_modal.empty_state"), panel
   end
 end
