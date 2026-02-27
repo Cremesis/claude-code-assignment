@@ -278,54 +278,59 @@ export default function KanbanBoard({ initialTasks = [] }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 p-8" data-saving={saving}>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Kanban Board</h1>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={openCreateModal}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm transition-colors"
-            aria-label="Add task"
-          >
-            Add Task
-          </button>
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 shadow-sm transition-colors"
-            aria-label="Search tasks"
-          >
-            🔍 Search
-          </button>
+    <div
+      className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8"
+      data-saving={saving}
+    >
+      <div className="mx-auto w-full max-w-7xl">
+        <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">Kanban Board</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={openCreateModal}
+              className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm transition-colors"
+              aria-label="Add task"
+            >
+              Add Task
+            </button>
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 shadow-sm transition-colors"
+              aria-label="Search tasks"
+            >
+              🔍 Search
+            </button>
+          </div>
         </div>
+
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          measuring={{ droppable: { strategy: MeasuringStrategy.BeforeDragging } }}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3 xl:gap-6">
+            {STATUSES.map((status) => (
+              <Column
+                key={status}
+                status={status}
+                tasks={tasks
+                  .filter((t) => t.status === status)
+                  .sort((a, b) => a.position - b.position)}
+                onCardClick={openEditModal}
+              />
+            ))}
+          </div>
+
+          <DragOverlay>
+            {activeTask ? (
+              <TaskCard task={activeTask} onClick={() => {}} />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </div>
-
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        measuring={{ droppable: { strategy: MeasuringStrategy.BeforeDragging } }}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex gap-6 items-start">
-          {STATUSES.map((status) => (
-            <Column
-              key={status}
-              status={status}
-              tasks={tasks
-                .filter((t) => t.status === status)
-                .sort((a, b) => a.position - b.position)}
-              onCardClick={openEditModal}
-            />
-          ))}
-        </div>
-
-        <DragOverlay>
-          {activeTask ? (
-            <TaskCard task={activeTask} onClick={() => {}} />
-          ) : null}
-        </DragOverlay>
-      </DndContext>
 
       {searchOpen && (
         <SearchModal

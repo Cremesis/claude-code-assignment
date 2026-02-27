@@ -20,7 +20,9 @@ export default function Column({ status, tasks, onCardClick }) {
   const styles = COLUMN_STYLES[status];
 
   return (
-    <div className={`flex flex-col rounded-xl border ${styles.border} bg-gray-50 min-h-[500px] w-80`}>
+    <div
+      className={`flex flex-col rounded-xl border ${styles.border} bg-gray-50 min-h-[420px] w-full`}
+    >
       <div className={`flex items-center justify-between px-4 py-3 rounded-t-xl ${styles.header}`}>
         <span className="font-semibold text-sm">
           {STATUS_LABELS[status]}
