@@ -95,8 +95,7 @@ class TaskSearchTest < ApplicationSystemTestCase
   def test_status_chip_filters_by_done
     panel = open_search_modal
 
-    # The "Done" chip in the component is labelled "Green" (see SearchModal CHIPS constant)
-    click_status_chip("Green", panel)
+    click_status_chip("Done", panel)
 
     assert_result_text tasks(:done_task).title, panel
     assert_no_result_text tasks(:todo_task).title, panel

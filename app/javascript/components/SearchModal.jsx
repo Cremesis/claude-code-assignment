@@ -16,7 +16,7 @@ const CHIPS = [
   { value: "all", label: "All", classes: "bg-gray-200 text-gray-700 hover:bg-gray-300" },
   { value: "todo", label: "Todo", classes: "bg-gray-100 text-gray-700 hover:bg-gray-200" },
   { value: "in_progress", label: "In Progress", classes: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
-  { value: "done", label: "Green", classes: "bg-green-100 text-green-700 hover:bg-green-200" },
+  { value: "done", label: "Done", classes: "bg-green-100 text-green-700 hover:bg-green-200" },
 ];
 
 export default function SearchModal({ tasks, onClose, onSelectTask }) {
