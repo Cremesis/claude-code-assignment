@@ -1,0 +1,4 @@
+<div><%= @task.title %></div>
+<% @task.comments.each do |comment| %>
+  <div><%= comment.body %></div>
+<% end %>

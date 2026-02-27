@@ -1,0 +1,11 @@
+first_comment:
+  body: "This is the first comment."
+  task: todo_task
+
+second_comment:
+  body: "This is the second comment."
+  task: todo_task
+
+comment_on_done:
+  body: "Looks good, shipped it."
+  task: done_task
