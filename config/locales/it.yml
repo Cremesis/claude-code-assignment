@@ -1,6 +1,10 @@
 it:
   app:
     title: "ClaudeCodeAssignment"
+    language: "Lingua"
+    locales:
+      en: "Inglese"
+      it: "Italiano"
   tasks:
     create:
       success: "Task creato."
@@ -22,6 +26,9 @@ it:
               can_only_advance_forward: "puo solo avanzare"
   frontend:
     locale: "it-IT"
+    language_switcher:
+      label: "Lingua del sito"
+      aria: "Seleziona la lingua del sito"
     statuses:
       todo: "Da fare"
       in_progress: "In corso"

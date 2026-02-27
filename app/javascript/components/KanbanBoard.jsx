@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -17,18 +17,68 @@ import { api } from "./api";
 import { useT } from "./i18n";
 
 const STATUSES = ["todo", "in_progress", "done"];
+const LOCALE_FLAGS = {
+  en: ["fi-us", "fi-gb"],
+  it: ["fi-it"],
+};
 
-export default function KanbanBoard({ initialTasks = [] }) {
+function LocaleFlags({ locale }) {
+  const flagClasses = LOCALE_FLAGS[locale] || [];
+  if (flagClasses.length === 0) return <span aria-hidden="true">🌐</span>;
+
+  return (
+    <span className="flex items-center gap-1" aria-hidden="true">
+      {flagClasses.map((flagClass) => (
+        <span key={flagClass} className={`fi ${flagClass} rounded-sm shadow-sm`} />
+      ))}
+    </span>
+  );
+}
+
+export default function KanbanBoard({
+  initialTasks = [],
+  currentLocale = "en",
+  localeOptions = [],
+}) {
   const t = useT();
   const [tasks, setTasks] = useState(initialTasks);
   const [modal, setModal] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [localeMenuOpen, setLocaleMenuOpen] = useState(false);
   const [activeTask, setActiveTask] = useState(null);
   const [dragOriginTasks, setDragOriginTasks] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const pendingReorderRef = useRef(null);
   const lastTargetStatusRef = useRef(null);
+  const localeMenuRef = useRef(null);
+  const selectedLocaleOption =
+    localeOptions.find((option) => option.value === currentLocale) || localeOptions[0];
+
+  useEffect(() => {
+    if (!localeMenuOpen) return undefined;
+
+    const handleOutsideClick = (event) => {
+      if (!localeMenuRef.current) return;
+      if (!localeMenuRef.current.contains(event.target)) {
+        setLocaleMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setLocaleMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [localeMenuOpen]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -277,6 +327,19 @@ export default function KanbanBoard({ initialTasks = [] }) {
     setTasks((prev) => prev.filter((task) => task.id !== taskId));
   };
 
+  const handleLocaleChange = (nextLocale) => {
+    setLocaleMenuOpen(false);
+    const url = new URL(window.location.href);
+    url.searchParams.set("locale", nextLocale);
+
+    if (window.Turbo?.visit) {
+      window.Turbo.visit(url.toString());
+      return;
+    }
+
+    window.location.assign(url.toString());
+  };
+
   return (
     <div
       className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8"
@@ -295,6 +358,67 @@ export default function KanbanBoard({ initialTasks = [] }) {
             >
               {t("kanban.add_task")}
             </button>
+            {localeOptions.length > 1 && (
+              <div className="relative w-full sm:w-auto" ref={localeMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setLocaleMenuOpen((open) => !open)}
+                  aria-haspopup="listbox"
+                  aria-expanded={localeMenuOpen}
+                  aria-label={t("language_switcher.aria")}
+                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 sm:min-w-[180px]"
+                >
+                  <span className="flex items-center gap-2">
+                    <LocaleFlags locale={currentLocale} />
+                    <span>{selectedLocaleOption?.label || currentLocale.toUpperCase()}</span>
+                  </span>
+                  <span className="text-slate-400" aria-hidden="true">
+                    ▾
+                  </span>
+                </button>
+
+                {localeMenuOpen && (
+                  <ul
+                    role="listbox"
+                    aria-label={t("language_switcher.label")}
+                    className="absolute right-0 z-20 mt-2 max-h-72 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg sm:min-w-[220px]"
+                  >
+                    {localeOptions.map((option) => (
+                      <li key={option.value} role="option" aria-selected={option.value === currentLocale}>
+                        <button
+                          type="button"
+                          onClick={() => handleLocaleChange(option.value)}
+                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100"
+                        >
+                          <span className="flex items-center gap-2">
+                            <LocaleFlags locale={option.value} />
+                            <span>{option.label}</span>
+                          </span>
+                          {option.value === currentLocale && (
+                            <span className="text-blue-600" aria-hidden="true">
+                              ✓
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <select
+                  value={currentLocale}
+                  onChange={(event) => handleLocaleChange(event.target.value)}
+                  className="sr-only"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                >
+                  {localeOptions.map((option) => (
+                    <option key={`${option.value}-fallback`} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <button
               onClick={() => setSearchOpen(true)}
               className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 shadow-sm transition-colors"
