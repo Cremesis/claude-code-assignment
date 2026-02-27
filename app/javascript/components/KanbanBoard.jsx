@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
+  MeasuringStrategy,
   PointerSensor,
   closestCorners,
   useSensor,
@@ -310,6 +311,7 @@ export default function KanbanBoard({ initialTasks = [] }) {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
+        measuring={{ droppable: { strategy: MeasuringStrategy.BeforeDragging } }}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
