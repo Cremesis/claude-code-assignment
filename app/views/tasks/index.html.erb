@@ -1,5 +1,6 @@
 <div id="react-root"
      data-component="KanbanBoard"
      data-tasks="<%= @tasks.includes(:comments).to_json(include: :comments) %>"
-     data-i18n="<%= frontend_i18n_data %>">
+     data-i18n="<%= frontend_i18n_data %>"
+     data-i18n-strict="<%= frontend_i18n_strict_mode? %>">
 </div>

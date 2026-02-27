@@ -15,6 +15,8 @@ const parseJson = (value, fallback) => {
   }
 };
 
+const parseBoolean = (value) => value === "true";
+
 document.addEventListener("DOMContentLoaded", () => {
   const mountPoint = document.getElementById("react-root");
   if (mountPoint) {
@@ -28,10 +30,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const messages = mountPoint.dataset.i18n
         ? parseJson(mountPoint.dataset.i18n, {})
         : {};
+      const strict = parseBoolean(mountPoint.dataset.i18nStrict);
 
       const root = createRoot(mountPoint);
       root.render(
-        <I18nProvider messages={messages}>
+        <I18nProvider messages={messages} strict={strict}>
           <Component {...props} />
         </I18nProvider>
       );
