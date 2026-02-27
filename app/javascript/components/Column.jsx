@@ -34,7 +34,11 @@ export default function Column({ status, tasks, onCardClick, onAddClick }) {
         ref={setNodeRef}
         className={`flex flex-col gap-2 p-3 flex-1 transition-colors ${isOver ? "bg-blue-50" : ""}`}
       >
-        <SortableContext items={tasks.map(t => String(t.id))} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          id={status}
+          items={tasks.map(t => String(t.id))}
+          strategy={verticalListSortingStrategy}
+        >
           {tasks.map((task) => (
             <TaskCard key={task.id} task={task} onClick={onCardClick} />
           ))}

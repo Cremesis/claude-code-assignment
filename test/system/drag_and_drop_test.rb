@@ -52,9 +52,8 @@ class DragAndDropTest < ApplicationSystemTestCase
 
     drag_to(card_for(tasks(:todo_task)), card_for(tasks(:todo_task_2)))
 
-    # Poll the DB until the new positions are persisted (reorder API call completed).
-    task = tasks(:todo_task)
-    Timeout.timeout(5) { sleep 0.05 until task.reload.position > 0 }
+    # Wait until all API calls complete (data-saving flips back to false).
+    assert_selector "[data-saving='false']", wait: 5
 
     visit root_path
 
@@ -120,10 +119,8 @@ class DragAndDropTest < ApplicationSystemTestCase
 
     drag_to(card_for(tasks(:todo_task)), card_for(tasks(:in_progress_task)))
 
-    # Poll the DB until the status change is persisted (API call completed),
-    # so we don't reload before the server has written the new state.
-    task = tasks(:todo_task)
-    Timeout.timeout(5) { sleep 0.05 until task.reload.status == "in_progress" }
+    # Wait until all API calls complete (data-saving flips back to false).
+    assert_selector "[data-saving='false']", wait: 5
 
     visit root_path
 
