@@ -60,6 +60,7 @@ en:
       comments_heading: "Comments (%{count})"
       no_comments: "No comments."
       add_comment_placeholder: "Add comment..."
+      confirm_comment_delete: "Confirm"
       send_comment: "Send"
       delete_task: "Delete task"
       confirm_delete: "Delete \"%{title}\"?"

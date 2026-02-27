@@ -12,6 +12,7 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
   const [description, setDescription] = useState(initialTask?.description ?? "");
   const [status, setStatus] = useState(initialTask?.status ?? defaultStatus ?? "todo");
   const [comments, setComments] = useState(initialTask?.comments ?? []);
+  const [pendingDeleteCommentId, setPendingDeleteCommentId] = useState(null);
   const [newComment, setNewComment] = useState("");
   const [errors, setErrors] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -109,12 +110,14 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
       const comment = await response.json();
       setComments((prev) => [...prev, comment]);
       setNewComment("");
+      setPendingDeleteCommentId(null);
     }
   };
 
   const handleDeleteComment = async (commentId) => {
     await api.delete(`/tasks/${initialTask.id}/comments/${commentId}.json`);
     setComments((prev) => prev.filter((comment) => comment.id !== commentId));
+    setPendingDeleteCommentId(null);
   };
 
   return (
@@ -248,17 +251,44 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
 
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="flex items-start justify-between gap-2 bg-gray-50 rounded-lg px-3 py-2"
-                >
-                  <p className="text-sm text-gray-700 flex-1">{comment.body}</p>
-                  <button
-                    onClick={() => handleDeleteComment(comment.id)}
-                    className="text-gray-300 hover:text-red-500 text-xs shrink-0"
+                <div key={comment.id} className="flex">
+                  <div
+                    className="w-full rounded-2xl rounded-bl-md border border-blue-100 bg-blue-50 px-3 py-2"
+                    onMouseLeave={() => {
+                      if (pendingDeleteCommentId === comment.id) {
+                        setPendingDeleteCommentId(null);
+                      }
+                    }}
                   >
-                    ✕
-                  </button>
+                    <p className="text-sm text-gray-700">{comment.body}</p>
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <span className="text-xs text-gray-500">
+                        {formatDateTime(comment.created_at)}
+                      </span>
+                      <div className="relative h-6 w-20 shrink-0">
+                        <button
+                          onClick={() => handleDeleteComment(comment.id)}
+                          className={`absolute inset-0 rounded bg-red-500 px-2 py-0.5 text-xs text-white hover:bg-red-600 transition-opacity ${
+                            pendingDeleteCommentId === comment.id
+                              ? "opacity-100 pointer-events-auto"
+                              : "opacity-0 pointer-events-none"
+                          }`}
+                        >
+                          {t("task_modal.confirm_comment_delete")}
+                        </button>
+                        <button
+                          onClick={() => setPendingDeleteCommentId(comment.id)}
+                          className={`absolute right-0 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 text-xs transition-opacity ${
+                            pendingDeleteCommentId === comment.id
+                              ? "opacity-0 pointer-events-none"
+                              : "opacity-100 pointer-events-auto"
+                          }`}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))}
               {comments.length === 0 && (
