@@ -64,6 +64,7 @@ en:
       send_comment: "Send"
       delete_task: "Delete task"
       confirm_delete: "Delete \"%{title}\"?"
+      confirm_close_unsaved: "There are unsaved changes. Close without saving?"
       generic_error: "Something went wrong"
       invalid_date: "-"
     task_card:

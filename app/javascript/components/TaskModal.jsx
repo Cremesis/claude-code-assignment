@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { useT } from "./i18n";
 
@@ -8,9 +8,13 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
   const t = useT();
   const { mode, task: initialTask, defaultStatus } = modal;
 
-  const [title, setTitle] = useState(initialTask?.title ?? "");
-  const [description, setDescription] = useState(initialTask?.description ?? "");
-  const [status, setStatus] = useState(initialTask?.status ?? defaultStatus ?? "todo");
+  const initialTitle = initialTask?.title ?? "";
+  const initialDescription = initialTask?.description ?? "";
+  const initialStatus = initialTask?.status ?? defaultStatus ?? "todo";
+
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
+  const [status, setStatus] = useState(initialStatus);
   const [comments, setComments] = useState(initialTask?.comments ?? []);
   const [pendingDeleteCommentId, setPendingDeleteCommentId] = useState(null);
   const [newComment, setNewComment] = useState("");
@@ -37,25 +41,41 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
     }).format(date);
   };
 
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.key === "Escape") onClose();
-    };
-
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  const handleOverlayClick = (e) => {
-    if (e.target === overlayRef.current) onClose();
-  };
-
   const availableStatuses = STATUSES.filter((nextStatus) => {
     if (mode === "create") return nextStatus === "todo";
 
     const currentIdx = STATUSES.indexOf(initialTask?.status ?? "todo");
     return STATUSES.indexOf(nextStatus) >= currentIdx;
   });
+
+  const hasPendingChanges =
+    mode === "create"
+      ? title !== initialTitle || description !== initialDescription
+      : title !== initialTitle ||
+        description !== initialDescription ||
+        status !== initialStatus;
+  const isSaveDisabled = saving || !hasPendingChanges;
+  const requestClose = useCallback(() => {
+    if (hasPendingChanges) {
+      const confirmed = confirm(t("task_modal.confirm_close_unsaved"));
+      if (!confirmed) return;
+    }
+
+    onClose();
+  }, [hasPendingChanges, onClose, t]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === "Escape") requestClose();
+    };
+
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [requestClose]);
+
+  const handleOverlayClick = (e) => {
+    if (e.target === overlayRef.current) requestClose();
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -134,7 +154,7 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
               : t("task_modal.task_title")}
           </h2>
           <button
-            onClick={onClose}
+            onClick={requestClose}
             className="text-gray-400 hover:text-gray-600 text-xl leading-none"
             aria-label={t("task_modal.close_aria")}
           >
@@ -223,20 +243,14 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleSave}
-              disabled={saving}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+              disabled={isSaveDisabled}
+              className={`flex-1 bg-blue-600 text-white text-sm font-medium py-2 rounded-lg transition-colors disabled:opacity-50 ${isSaveDisabled ? "" : "hover:bg-blue-700"}`}
             >
               {saving
                 ? t("task_modal.saving")
                 : mode === "create"
                   ? t("task_modal.create")
                   : t("task_modal.save")}
-            </button>
-            <button
-              onClick={onClose}
-              className="px-4 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              {t("task_modal.cancel")}
             </button>
           </div>
         </div>

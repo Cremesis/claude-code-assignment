@@ -64,6 +64,7 @@ it:
       send_comment: "Invia"
       delete_task: "Elimina task"
       confirm_delete: "Eliminare \"%{title}\"?"
+      confirm_close_unsaved: "Ci sono modifiche non salvate. Chiudere senza salvare?"
       generic_error: "Qualcosa e andato storto"
       invalid_date: "-"
     task_card:

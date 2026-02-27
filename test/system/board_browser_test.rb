@@ -76,13 +76,13 @@ class BoardBrowserTest < ApplicationSystemTestCase
   end
 
   # ---------------------------------------------------------------------------
-  # 8. "Annulla" closes the modal
+  # 8. Close icon closes the modal
   # ---------------------------------------------------------------------------
-  test "cancel button closes the modal" do
+  test "close icon closes the modal" do
     visit root_path
     find("p", text: tasks(:todo_task).title).click
     assert_selector "input[value='#{tasks(:todo_task).title}']"
-    click_button ui_t("task_modal.cancel")
+    find(%(button[aria-label="#{ui_t("task_modal.close_aria")}"])).click
     assert_no_selector "input[value='#{tasks(:todo_task).title}']"
   end
 
@@ -98,7 +98,39 @@ class BoardBrowserTest < ApplicationSystemTestCase
   end
 
   # ---------------------------------------------------------------------------
-  # 10. Delete task → disappears from the board
+  # 10. Save remains disabled until there are pending changes
+  # ---------------------------------------------------------------------------
+  test "save button enables only with pending changes" do
+    visit root_path
+    find("p", text: tasks(:todo_task).title).click
+
+    assert_button ui_t("task_modal.save"), disabled: true
+
+    fill_in ui_t("task_modal.title_placeholder"), with: "#{tasks(:todo_task).title} updated"
+    assert_button ui_t("task_modal.save"), disabled: false
+  end
+
+  # ---------------------------------------------------------------------------
+  # 11. Close with pending changes asks for confirmation
+  # ---------------------------------------------------------------------------
+  test "closing with pending changes requires confirmation" do
+    visit root_path
+    find("p", text: tasks(:todo_task).title).click
+    fill_in ui_t("task_modal.title_placeholder"), with: "#{tasks(:todo_task).title} updated"
+
+    dismiss_confirm do
+      find(%(button[aria-label="#{ui_t("task_modal.close_aria")}"])).click
+    end
+    assert_selector "input[value='#{tasks(:todo_task).title} updated']"
+
+    accept_confirm do
+      find(%(button[aria-label="#{ui_t("task_modal.close_aria")}"])).click
+    end
+    assert_no_selector "input[value='#{tasks(:todo_task).title} updated']"
+  end
+
+  # ---------------------------------------------------------------------------
+  # 12. Delete task → disappears from the board
   # ---------------------------------------------------------------------------
   test "deleting a task removes it from the board" do
     visit root_path
