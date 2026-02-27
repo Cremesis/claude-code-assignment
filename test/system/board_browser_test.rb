@@ -50,6 +50,8 @@ class BoardBrowserTest < ApplicationSystemTestCase
     visit root_path
     find("p", text: tasks(:todo_task).title).click
     assert_selector "input[value='#{tasks(:todo_task).title}']"
+    assert_text "Data creazione"
+    assert_text "Ultimo aggiornamento"
   end
 
   # ---------------------------------------------------------------------------

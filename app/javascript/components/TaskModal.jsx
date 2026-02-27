@@ -17,6 +17,19 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
 
   const overlayRef = useRef(null);
 
+  const formatDateTime = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return new Intl.DateTimeFormat("it-IT", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  };
+
   // Close on ESC
   useEffect(() => {
     const handler = (e) => { if (e.key === "Escape") onClose(); };
@@ -143,6 +156,23 @@ export default function TaskModal({ modal, onClose, onSave, onDelete }) {
                 ))}
               </select>
               <p className="text-xs text-gray-400 mt-1">Lo status può solo avanzare</p>
+            </div>
+          )}
+
+          {mode !== "create" && (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-gray-600">Data creazione</span>
+                <span className="font-medium text-gray-800">
+                  {formatDateTime(initialTask?.created_at)}
+                </span>
+              </div>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <span className="text-gray-600">Ultimo aggiornamento</span>
+                <span className="font-medium text-gray-800">
+                  {formatDateTime(initialTask?.updated_at)}
+                </span>
+              </div>
             </div>
           )}
 
