@@ -46,6 +46,17 @@ bundle exec rails console
   - test        → `claude_code_assignment_test`
   - production  → `claude_code_assignment_production`
 
+## Testing / coverage
+
+- Coverage uses SimpleCov from `test/test_helper.rb`.
+- `rails test:all` may report `Line Coverage: 0.0% (0 / 202)` when tests run in
+  parallel workers and coverage is not collated from worker processes.
+- For reliable coverage reporting, run:
+
+```bash
+PARALLEL_WORKERS=1 bundle exec rails test:all
+```
+
 ---
 
 ## Project skills
